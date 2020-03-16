@@ -1,41 +1,40 @@
 const jwt = require("jsonwebtoken");
+const { authLevel } = require('./authLevel');
 
 module.exports.authMiddleware = function(level) {
-  return function(req, res, next) {
+  return async function(req, res, next) {
     if(level === authLevel.public) {
       return next();
     }
 
-    const authorization = req.headers.authorization;
+    const { authorization } = req.headers;
 
-    if(!authorization) {
+    if(!authorization || authorization.indexOf('Bearer ') !== 0) {
       return res.status(401).json({ message: 'Not authenticated!' });
-    } else {
-      if(authorization.indexOf('Bearer ') !== 0) {
-        return res.status(401).json({ message: 'Not a valid token!' });
+    }
+
+    const token = authorization.replace('Bearer ', '');
+
+    console.log(token);
+
+    try {
+      const payload = await decodeToken(token);
+
+      const { uid, ext } = payload;
+
+      if(ext < Date.now()) {
+        return res.status(401).json({ message: 'Token expired!' });
       }
 
-      const token = authorization.replace('Bearer ', '');
-
-      try {
-        const payload = decode(token);
-
-        console.log('PAYLOAD:', payload);
-
-        const { uid, ext } = payload;
-
-        if(ext < Date.now()) {
-          return res.status(401).json({ message: 'Token expired!' });
-        }
-
-        res.locals.user = {
-          id: uid
-        }
-        
-        next();
-      } catch(err) {
-        return res.statu(400).json({ message: 'Invalid token!'});
+      res.locals.user = {
+        id: uid
       }
+      
+      next();
+    } catch(err) {
+      console.log('ERROR:', err);
+
+      return res.status(400).json({ message: 'Invalid token!'});
     }
   }
 }
