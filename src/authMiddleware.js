@@ -15,8 +15,6 @@ module.exports.authMiddleware = function(level) {
 
     const token = authorization.replace('Bearer ', '');
 
-    console.log(token);
-
     try {
       const payload = await decodeToken(token);
 
