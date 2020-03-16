@@ -25,6 +25,7 @@ module.exports.authMiddleware = function(level) {
       }
 
       res.locals.user = {
+        token,
         id: uid
       }
       
